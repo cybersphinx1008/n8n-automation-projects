@@ -1,1 +1,207 @@
-
+{
+  "name": "dailyNews",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -576,
+        -160
+      ],
+      "id": "cd604d09-31ee-4b7a-87bd-f947ccf6249c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "sandeepchoudhary0566@gmail.com",
+        "subject": "=🤖 Your Daily AI News Digest — {{ $now.toFormat('dd MMM yyyy') }}",
+        "message": "=={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        528,
+        -304
+      ],
+      "id": "2f874abd-cb0b-43f8-b294-b19b12af21a7",
+      "name": "Send a message",
+      "webhookId": "62fa5715-e823-44b5-a8d9-2529f801abd8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OcsEymILP6ah6nSX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst articles = $('NEWS API').first().json.articles;\nconst text = articles.map(a => a.title + ': ' + a.description).join('\\n');\n\nreturn [{\n  json: {\n    groq_body: JSON.stringify({\n      model: \"llama-3.3-70b-versatile\",\n      messages: [{\n        role: \"user\",\n        content: \"Summarize these news headlines into a clean daily digest. For each write 2 sentences:\\n\\n\" + text\n      }]\n    })\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        -96
+      ],
+      "id": "2c55f3bc-4989-48b0-9618-c7e7e2bd61b4",
+      "name": "JSON FOR AI MODEL"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "=raw",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "body": "={{ $json.groq_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        80,
+        -304
+      ],
+      "id": "abbcc5a3-1153-4628-b18b-2680229b05fa",
+      "name": "AI MODEL"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/top-headlines?category=technology&language=en&pageSize=5&apiKey=ab9f17e422c74aa9989fa19fc9a90e97",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -352,
+        -288
+      ],
+      "id": "34187033-4d13-43c3-a5d9-20a105c6d29f",
+      "name": "NEWS API"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst raw = $('AI MODEL').item.json.choices[0].message.content;\n\n// Convert markdown to HTML\nconst html = raw\n  .replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>')\n  .replace(/\\n\\n/g, '</p><p>')\n  .replace(/\\n/g, '<br/>');\n\nconst emailBody = `\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; color: #333;\">\n  \n  <div style=\"background: linear-gradient(135deg, #1A237E, #1565C0); padding: 24px; border-radius: 10px; text-align: center; margin-bottom: 24px;\">\n    <h1 style=\"color: white; margin: 0; font-size: 24px;\">🤖 Daily AI News Digest</h1>\n    <p style=\"color: #BBDEFB; margin: 8px 0 0 0; font-size: 14px;\">${new Date().toDateString()}</p>\n  </div>\n\n\n\n  <p>${html}</p>\n\n  <hr style=\"border: none; border-top: 1px solid #eee; margin: 24px 0;\"/>\n  <p style=\"color: #999; font-size: 11px; text-align: center;\">\n    Sent automatically by your n8n AI News Bot 🤖<br/>\n    Built by Sandeep Choudhary\n  </p>\n\n</body>\n</html>\n`;\n\nreturn [{ json: { emailBody } }];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -80
+      ],
+      "id": "48d6f8a5-77ff-4e96-9664-e6bb41d20649",
+      "name": "making message perfect for mail"
+    },
+    {
+      "parameters": {
+        "content": "this is a workflow to mail daily news at fix time "
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -208,
+        -416
+      ],
+      "typeVersion": 1,
+      "id": "c985c1db-b730-4f86-a206-4433b99a4d88",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "NEWS API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON FOR AI MODEL": {
+      "main": [
+        [
+          {
+            "node": "AI MODEL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI MODEL": {
+      "main": [
+        [
+          {
+            "node": "making message perfect for mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NEWS API": {
+      "main": [
+        [
+          {
+            "node": "JSON FOR AI MODEL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "making message perfect for mail": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6ec9f983-fd0e-4ba5-bca5-22a3edc9751d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cdc38294396709af12e0f20f0e67b1073691937488d4dceb6fa1223003c312e"
+  },
+  "id": "8pEdQ5r3yd2HS73i",
+  "tags": []
+}
