@@ -1,0 +1,508 @@
+{
+  "name": "Smart Contact Form Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "contact-form",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        112
+      ],
+      "id": "6f63ad29-1686-46de-8f31-bf28f314a683",
+      "name": "Webhook",
+      "webhookId": "65eb8704-fcf0-403b-ace7-f5548901b0b8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer API KEY"
+            },
+            {
+              "name": "Content-Type ",
+              "value": " application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "JSON",
+        "body": "={{ $json.groq_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        112
+      ],
+      "id": "9c775949-2112-4ba9-a061-d0a1630e03ea",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.choices[0].message.content.trim() }}",
+                    "rightValue": "Sales",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "82f933bd-a2d4-45fb-8a64-3baf91b964ad"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "80fa5b28-5c4b-4439-bef1-acf524325f51",
+                    "leftValue": "={{ $json.choices[0].message.content.trim() }}",
+                    "rightValue": "Support",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Support"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c055ef21-c408-4a7c-bd21-fd01260b24b0",
+                    "leftValue": "={{ $json.choices[0].message.content.trim() }}",
+                    "rightValue": "Partnership",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Partnership"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "91827f78-2fc2-4607-88e1-22426e4b4fd8",
+                    "leftValue": "={{ $json.choices[0].message.content.trim() }}",
+                    "rightValue": "Spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Spam"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        80
+      ],
+      "id": "d39a35e0-daa4-4c33-8149-68633dc36729",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $input.first().json.body.message;\nconst name = $input.first().json.body.name;\nconst email = $input.first().json.body.email;\n\nreturn [{\n  json: {\n    name: name,\n    email: email,\n    message: message,\n    groq_body: JSON.stringify({\n      model: \"llama-3.3-70b-versatile\",\n      messages: [{\n        role: \"user\",\n        content: `Classify this customer message into exactly ONE category.\nReply with ONLY one word — Sales, Support, Partnership, or Spam.\n\nMessage: \"${message}\"`\n      }]\n    })\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        112
+      ],
+      "id": "9d278d74-e738-4627-8e58-69620f85a6ff",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code').item.json.email }}",
+        "subject": "Thank you for your interest — We'll be in touch soon!",
+        "message": "=<html> <body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">    <div style=\"background: #1565C0; padding: 20px; border-radius: 8px; text-align: center;\">     <h2 style=\"color: white; margin: 0;\">💼 Sales Inquiry Received</h2>   </div>    <div style=\"padding: 20px;\">     <p>Dear {{ $('Code').item.json.name }},</p>     <p>Thank you for reaching out! We have received your sales inquiry and our team will get back to you within <b>24 hours</b> with pricing and details.</p>     <p>We look forward to working with you!</p>     <br/>     <p>Warm regards,<br/><b>The Sales Team</b></p>   </div>  </body> </html> ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -160
+      ],
+      "id": "e0780bff-e3cb-4b5a-bec9-79bda08040f9",
+      "name": "Sales Reply",
+      "webhookId": "e6d43f8e-98df-4b24-a5e0-631581701ae9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OcsEymILP6ah6nSX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code').item.json.email }}",
+        "subject": "Support Request Received — We are on it!",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n\n  <div style=\"background: #2E7D32; padding: 20px; border-radius: 8px; text-align: center;\">\n    <h2 style=\"color: white; margin: 0;\">🛠️ Support Request Received</h2>\n  </div>\n\n  <div style=\"padding: 20px;\">\n    <p>Dear {{ $('Code').item.json.name }},</p>\n    <p>We have received your support request and our technical team is already looking into it. You can expect a detailed response within <b>2-4 hours</b>.</p>\n    <p>Thank you for your patience!</p>\n    <br/>\n    <p>Warm regards,<br/><b>The Support Team</b></p>\n  </div>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        32
+      ],
+      "id": "e2545fc4-fe0f-4fb8-bd81-03b94f582a55",
+      "name": "Request Reply",
+      "webhookId": "e6d43f8e-98df-4b24-a5e0-631581701ae9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OcsEymILP6ah6nSX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code').item.json.email }}",
+        "subject": "Partnership Inquiry — Excited to Connect!",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n\n  <div style=\"background: #6A1B9A; padding: 20px; border-radius: 8px; text-align: center;\">\n    <h2 style=\"color: white; margin: 0;\">🤝 Partnership Inquiry Received</h2>\n  </div>\n\n  <div style=\"padding: 20px;\">\n    <p>Dear {{ $('Code').item.json.name }},</p>\n    <p>Thank you for your interest in partnering with us! We love connecting with like-minded organizations. Our partnerships team will review your inquiry and reach out within <b>48 hours</b>.</p>\n    <p>Exciting things ahead!</p>\n    <br/>\n    <p>Warm regards,<br/><b>The Partnerships Team</b></p>\n  </div>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        320
+      ],
+      "id": "9c623e92-2bc2-4227-91d6-23124793526e",
+      "name": "Partnership Request",
+      "webhookId": "e6d43f8e-98df-4b24-a5e0-631581701ae9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OcsEymILP6ah6nSX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        80
+      ],
+      "id": "e1a257de-f6f2-4381-ac51-2f243a6c7118",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1tKGdaw8sDESCU349a259CjdyceTdGJeYV1U-VJjypug",
+          "mode": "list",
+          "cachedResultName": "Contact Form Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tKGdaw8sDESCU349a259CjdyceTdGJeYV1U-VJjypug/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tKGdaw8sDESCU349a259CjdyceTdGJeYV1U-VJjypug/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ new Date().toISOString() }}",
+            "name": "={{ $('Code').item.json.name }}",
+            "email": "={{ $('Code').item.json.email}}",
+            "message": "={{ $('Code').item.json.message}}",
+            "category": "={{ $('HTTP Request').item.json.choices[0].message.content}}",
+            "status": "sent"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1344,
+        112
+      ],
+      "id": "dedf1738-db41-4510-a3cb-9fcc0de37577",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VDR70BMEtvqyGQrX",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Smart Contact Form Handler\n\nThis workflow automatically handles incoming \ncontact form submissions using AI.\n\n**How it works:**\n1️⃣ Receives form data via Webhook\n2️⃣ Groq AI classifies the message\n3️⃣ Routes to correct response branch\n4️⃣ Sends personalized auto-reply email\n5️⃣ Logs everything to Google Sheets\n\n**Categories:**\n📦 Sales     → Pricing response\n🛠️ Support   → Help response  \n🤝 Partner   → Collaboration response\n🚫 Spam      → Silently ignored\n\n**Built with:** n8n + Groq AI + Gmail + Sheets\n**Author:** Sandeep Choudhary",
+        "height": 256,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "32e364d3-b5b1-462f-8905-572cb8ba5b27",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Sales Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Partnership Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Reply": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Reply": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Partnership Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "53be996e-00b0-415b-abc0-c5b92778f80b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cdc38294396709af12e0f20f0e67b1073691937488d4dceb6fa1223003c312e"
+  },
+  "id": "xUFfc74vR8YcY6Zt",
+  "tags": []
+}
