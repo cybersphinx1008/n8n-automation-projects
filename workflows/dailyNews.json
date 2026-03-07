@@ -94,7 +94,7 @@
     },
     {
       "parameters": {
-        "url": "https://newsapi.org/v2/top-headlines?category=technology&language=en&pageSize=5&apiKey=ab9f17e422c74aa9989fa19fc9a90e97",
+        "url": "https://newsapi.org/v2/top-headlines?category=technology&language=en&pageSize=5&apiKey=NEWS API KEY "
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
