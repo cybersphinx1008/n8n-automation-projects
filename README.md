@@ -1,13 +1,13 @@
-# 🤖 n8n Automation Projects
+# n8n Automation Projects
 
 AI-powered automation workflows built with n8n.
 Designed to demonstrate real-world automation skills for AI companies.
 
 ---
 
-## 📋 Projects
+##  Projects
 
-### 1. 🗞️ AI News Digest Bot
+### 1. AI News Digest Bot
 Automatically fetches top tech news every morning, 
 summarizes articles using Groq AI, and delivers a 
 beautifully formatted HTML digest to your inbox daily.
@@ -18,7 +18,7 @@ beautifully formatted HTML digest to your inbox daily.
 
 ---
 
-### 2. 📬 Smart Contact Form Handler
+### 2.  Smart Contact Form Handler
 Receives form submissions via webhook, classifies messages 
 with AI into Sales/Support/Partnership/Spam, assigns priority 
 level, routes to correct team, auto-replies, and logs 
@@ -30,7 +30,7 @@ everything to Google Sheets.
 
 ---
 
-## ⚙️ Setup Instructions
+##  Setup Instructions
 
 To use these workflows in your own n8n instance:
 
@@ -43,7 +43,7 @@ To use these workflows in your own n8n instance:
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Tool | Purpose |
 |---|---|
@@ -56,7 +56,7 @@ To use these workflows in your own n8n instance:
 
 ---
 
-## 🔒 Security Note
+##  Security Note
 
 All API keys have been replaced with placeholders.
 Never push real API keys to public repositories.
