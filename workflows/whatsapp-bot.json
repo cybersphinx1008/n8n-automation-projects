@@ -1,0 +1,165 @@
+{
+  "name": "WhatsApp Business Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-bot",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "aa7a2fc6-3657-4c99-99b4-ac3310de6b6a",
+      "name": "Webhook",
+      "webhookId": "6a6955dd-bd76-493b-aea6-8ee2facd7979"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\nconst customerMessage = body.Body;\nconst customerName = body.ProfileName;\nconst customerNumber = body.From;\nconst accountSid = body.AccountSid;\n\nreturn [{\n  json: {\n    customerMessage,\n    customerName,\n    customerNumber,\n    accountSid,\n    groq_body: JSON.stringify({\n      model: \"llama-3.3-70b-versatile\",\n      messages: [\n        {\n          role: \"system\",\n          content: `You are a helpful WhatsApp business assistant for a tech company.\nYou handle product inquiries and pricing questions professionally.\n\nOur Products & Pricing:\n- Basic Plan: Rs 999/month — 5 users, basic features\n- Pro Plan: Rs 2499/month — 20 users, advanced features, priority support\n- Enterprise Plan: Custom pricing — unlimited users, dedicated support\n\nRules:\n-keep msg attractive and readble , so it focus on main part\n- Keep replies short and conversational (WhatsApp style)\n- Use simple language\n- Always end with a question to keep conversation going\n- If asked about something outside products/pricing, politely redirect\n- Address customer by first name`\n        },\n        {\n          role: \"user\",\n          content: `Customer name: ${customerName}\\nMessage: ${customerMessage}`\n        }\n      ]\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7ac855ec-cef0-4818-971a-c9a15af5bcc0",
+      "name": "Prepare AI Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "json",
+        "body": "={{ $json.groq_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1c573954-34d0-40bf-ae59-3fdb6382ad28",
+      "name": "Ask Groq AI",
+      "credentials": {
+        "groqApi": {
+          "id": "YFanwjHoD01qS6sR",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiReply = $('Ask Groq AI').item.json.choices[0].message.content;\nconst customerNumber = $('Prepare AI Request').item.json.customerNumber;\nconst accountSid = $('Prepare AI Request').item.json.accountSid;\n\n// Twilio credentials\nconst twilioAccountSid = \"SID twillo ";\nconst twilioAuthToken = \"twillo TOKEN";\nconst twilioNumber = \"whatsapp:+14155238886\";\n\n// Encode credentials for Basic Auth\nconst credentials = Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64');\nconst twilio_body = `From=${encodeURIComponent(twilioNumber)}&To=${encodeURIComponent(customerNumber)}&Body=${encodeURIComponent(aiReply)}`;\n\nreturn [{\n  json: {\n    aiReply,\n    customerNumber,\n    twilioAccountSid,\n    credentials,\n    twilioNumber,\n    twilio_body\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "de625cfd-3c86-4f37-88fb-3f545fac743d",
+      "name": "Prepare Twilio Reply"
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Prepare Twilio Reply').item.json.twilioNumber }}",
+        "to": "={{ $('Prepare Twilio Reply').item.json.customerNumber }}",
+        "message": "={{ $('Prepare Twilio Reply').item.json.aiReply }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "42c0f710-4fc3-4881-82b1-b629c1fb3dd0",
+      "name": "Send WhatsApp Reply",
+      "credentials": {
+        "twilioApi": {
+          "id": "IGs9dtuMARTWnzMT",
+          "name": "Twilio account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Request": {
+      "main": [
+        [
+          {
+            "node": "Ask Groq AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Groq AI": {
+      "main": [
+        [
+          {
+            "node": "Prepare Twilio Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Twilio Reply": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6622d24b-bedf-413e-ad15-426997b98c8c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cdc38294396709af12e0f20f0e67b1073691937488d4dceb6fa1223003c312e"
+  },
+  "id": "BwNNasTKofLCQTFi",
+  "tags": []
+}
